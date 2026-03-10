@@ -155,12 +155,20 @@ df_binarise_final = df_binarise_final.drop(
 #view clean
 df_binarise_final
 
+
 #export to csv
+
+#define index
+df_binarise_final.index = [f"case {i+1}" for i in range(len(df_binarise_final))]
+
+# name the index
+df_binarise_final.index.name = "sid"
+
 df_binarise_final.to_csv(
 "C:/Users/Anaëlle/Desktop/Stage CHU/AKAKPOVI.ANAELLE/Soutenance_Python/data/df_binarise_final.csv",
 sep=";",
 encoding="utf-8-sig",
-index=False
+index=True
 )
 #open csv file df_binarise_final to check lines
 df = pd.read_csv(
@@ -171,6 +179,40 @@ df = pd.read_csv(
 print(df.head())
 print(df.shape) 
 
+#create table for bland altman 
+# copy data frame binarized
+df_score = df_binarise_final.copy()
+
+# final table for scores
+df_scores = pd.DataFrame(index=df_score.index)
+
+# new table for score 
+df_scores = pd.DataFrame(index=df_binarise_final.index)
+
+# Boucle on V1 à V20
+for i in range(1, 21):
+
+    # visit columns
+    cols_v = df_binarise_final.filter(regex=f'^v{i}_').columns
+
+    # Separate objectif / subjectif
+    cols_obj = cols_v[:8]   # 8 premières colonnes
+    cols_subj = cols_v[8:]  # 8 dernières colonnes
+
+    # Calculate scores
+    df_scores[f'V{i}_Scoreobj'] = df_binarise_final[cols_obj].sum(axis=1)
+    df_scores[f'V{i}_Scoresubj'] = df_binarise_final[cols_subj].sum(axis=1)
+
+# final result
+print(df_scores.shape)
+print(df_scores.head())
+
+df_scores.to_csv(
+"C:/Users/Anaëlle/Desktop/Stage CHU/AKAKPOVI.ANAELLE/Soutenance_Python/data/df_scores_final.csv",
+sep=";",
+encoding="utf-8-sig",
+index=True
+)
 </pre>
 </body>
 </html>
