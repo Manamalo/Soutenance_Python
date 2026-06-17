@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta http-equiv="content-type" content="text/html; charset=utf-8"/>
+	<title>Code for Python Soutenance</title>
+	<meta name="generator" content="LibreOffice 7.4.7.2 (Linux)"/>
+	<meta name="created" content="00:00:00"/>
+	<meta name="changed" content="2026-05-09T18:40:54.791530053"/>
+	<meta name="" content=""/>
+	<meta name="created" content="00:00:00">
+	<meta name="created" content="00:00:00">
+	<meta name="created" content="00:00:00">
+	<style type="text/css">
+		@page { size: 8.5in 11in; margin-left: 0.79in; margin-right: 0.39in; margin-top: 0.39in; margin-bottom: 0.39in }
+		p { color: #000000; font-family: monospace; line-height: 115%; margin-bottom: 0.1in; background: transparent; background: transparent }
+		h1 { color: #000000; text-align: center; margin-bottom: 0.08in; background: transparent; background: transparent; page-break-after: avoid }
+		h1.western { font-family: "Liberation Serif", serif; font-size: 24pt; font-weight: bold }
+		h1.cjk { font-family: "Noto Serif CJK SC"; font-size: 24pt; font-weight: bold }
+		h1.ctl { font-family: "FreeSans"; font-size: 24pt; font-weight: bold }
+		h3 { color: #000000; text-align: center; margin-top: 0.1in; margin-bottom: 0.08in; background: transparent; background: transparent; page-break-after: avoid }
+		h3.western { font-family: "Liberation Serif", serif; font-size: 14pt; font-weight: normal }
+		h3.cjk { font-family: "Noto Serif CJK SC"; font-size: 14pt; font-weight: normal }
+		h3.ctl { font-family: "FreeSans"; font-size: 14pt; font-weight: normal }
+		pre { color: #000000; background: transparent; border: none; padding: 0in; background: transparent }
+		pre.western { font-family: "Liberation Mono", monospace; font-size: 10pt }
+		pre.cjk { font-family: "Noto Sans Mono CJK SC", monospace; font-size: 10pt }
+		pre.ctl { font-family: "Liberation Mono", monospace; font-size: 10pt }
+		a:link { color: #000080; text-decoration: underline }
+		a:visited { color: #800000; text-decoration: underline }
+		strong { font-weight: bold }
+	</style>
+</head>
+<body lang="en-US" text="#000000" link="#000080" vlink="#800000" bgcolor="#f5f5f5" dir="ltr" style="border: none; padding: 0in"><h1 class="western">
+Code for Python Soutenance</h1>
+<h3 class="western">23/03/2026</h3>
+<h3 class="western">by Anaëlle AKAKPOVI and ChatGPT 
+</h3>
+<p><br/>
+<br/>
+
+</p>
+<h1 class="western"><strong><b>1. DATA IMPORT</b></strong></h1>
+<p>First, we import the data and check its structure.</p>
+<pre class="western">
+#import library 
+import pandas as pd
+
+#read csv file
+df = pd.read_csv(
+&quot;data/REFLEXION.csv&quot;,
+sep=&quot;,&quot;
+)
+
+#print results
+print(df.head())
+print(df.shape)
+</pre><h1 class="western">
+2. DATA CLEANING</h1>
+<p>Next, we clean the data by selecting the columns that will be used
+for our calculations.</p>
+<pre class="western">
+#remove index line 3 and reset/reinitialize index
+df = df.drop(df.index[3]).reset_index(drop=True)
+
+# select columns with &quot;css&quot; 
+df_css = df.filter(regex='css', axis=1)
+
+# show first lines
+print(df_css.head())
+
+# Remove columns with &quot;rea&quot; and columns finish by &quot;css1&quot;
+df_css_clean = df_css.filter(regex='^(?!.*rea)(?!.*css1$)', axis=1)
+
+# Keep columns that start with &quot;v&quot;              
+df_v = df_css_clean.filter(regex='^v', axis=1)
+
+# Remove columns &quot;v&quot; with cssforce1, cssforce2, cssforce3 or cssforcescref
+df_v = df_v.filter(regex='^(?!.*cssforce([123]|scref)).*', axis=1)
+
+# Keep 3 columns &quot;icsstemp_s&quot;, &quot;icsssud_s&quot;, &quot;icssforcemoy_s&quot;
+df_exceptions = df_css_clean.filter(items=[&quot;icsstemp_s&quot;, &quot;icsssud_s&quot;, &quot;icssforcemoy_s&quot;])
+
+# Combine
+df_css_clean = pd.concat([df_v, df_exceptions], axis=1)
+
+#see results
+print(df_css_clean.shape)
+print(df_css_clean.columns)
+print(df_css_clean.head())
+
+#see clean table
+df_css_clean</pre><p style="line-height: 100%; margin-bottom: 0in; background: transparent">
+<br/>
+
+</p>
+<ol>
+	<li><h1 class="western">3. DATA STRUCTURING (BINARIZATION)</h1>
+</ol>
+<p align="left" style="line-height: 115%">Next, we structure our
+dataset by transforming the caregiver's continuous data into binary
+data.</p>
+<pre class="western">
+# New DataFrame for binarization
+binarization = df_css_clean.copy()
+
+# Select columns with &quot;cssdoul&quot;
+cols_cssdoul = binarization.filter(regex='cssdoul', axis=1).columns
+
+# Apply binary transformation: &gt;=8 -&gt; 1, &lt;8 -&gt; 0
+binarization[cols_cssdoul] = binarization[cols_cssdoul].applymap(
+    lambda x: 1 if x &gt;= 8 else (0 if pd.notna(x) else pd.NA)
+)
+
+# Preview
+print(&quot;Columns transformed to binary:&quot;, list(cols_cssdoul))
+print(binarization[cols_cssdoul].head())
+# csstemp columns are already binarized
+cols_csstemp = df_css_clean.filter(regex='csstemp', axis=1).columns
+
+# Preview column names
+print(list(cols_csstemp))
+
+# View first five rows of csstemp columns
+print(df_css_clean[cols_csstemp].head())
+# Select columns with &quot;csssud&quot; to check values
+cols_csssud = df_css_clean.filter(regex='csssud', axis=1).columns
+
+# Preview column names
+print(&quot;csssud columns:&quot;, list(cols_csssud))
+
+# View first five rows of csssud columns
+print(df_css_clean[cols_csssud].head())
+# Check data for &quot;cssoed&quot; (already binarized)
+
+# Columns with cssoed
+cols_cssoed = df_css_clean.filter(regex='cssoed', axis=1).columns
+print(&quot;cssoed columns:&quot;, list(cols_cssoed))
+
+# View results
+print(&quot;
+Preview of cssoed columns:&quot;)
+print(df_css_clean[cols_cssoed].head())
+# Check data for &quot;forcemoy&quot;
+
+# Columns with &quot;cssforcemoy&quot;
+cols_cssforcemoy = df_css_clean.filter(regex='cssforcemoy', axis=1).columns
+print(&quot;cssforcemoy columns:&quot;, list(cols_cssforcemoy))
+
+# View results
+print(&quot;
+Preview of cssforcemoy columns:&quot;)
+print(df_css_clean[cols_cssforcemoy].head())
+# Binarization of &quot;sudation&quot;
+# Pathologic columns &quot;csssud&quot; with 30% difference
+cols_csssud = df_css_clean.filter(regex='^v.*_csssud$', axis=1).columns
+
+# Binarization
+binarization_sud = ((df_css_clean[cols_csssud].sub(df_css_clean['icsssud_s'], axis=0)
+                     .abs()
+                     .div(df_css_clean['icsssud_s'], axis=0)) &gt; 0.3)
+
+binarization_sud = binarization_sud.where(df_css_clean[cols_csssud].notna()).astype(&quot;Int64&quot;)
+
+# View first rows
+print(binarization_sud.head())
+
+
+# Binarization of &quot;force moyenne&quot;
+# Pathologic columns &quot;forcemoy&quot;
+cols_cssforcemoy = df_css_clean.filter(regex='^v.*_cssforcemoy$', axis=1).columns
+
+# Binarization with 5kg difference
+binarization_forcemoy = ((df_css_clean[cols_cssforcemoy]
+                          .sub(df_css_clean['icssforcemoy_s'], axis=0)
+                          .abs()) &gt; 5)
+
+binarization_forcemoy = binarization_forcemoy.where(df_css_clean[cols_cssforcemoy].notna()).astype(&quot;Int64&quot;)
+
+# View first rows
+print(binarization_forcemoy.head())
+# Final table based on df_css_clean
+df_binarized_final = df_css_clean.copy()
+
+# Replace pain columns with binary version
+df_binarized_final[cols_cssdoul] = binarization[cols_cssdoul]
+
+# Replace &quot;sudation&quot; columns with binary version
+df_binarized_final[cols_csssud] = binarization_sud
+
+# Replace &quot;forcemoy&quot; columns with binary version
+df_binarized_final[cols_cssforcemoy] = binarization_forcemoy
+
+# Drop healthy columns
+df_binarized_final = df_binarized_final.drop(
+    columns=[&quot;icsssud_s&quot;, &quot;icssforcemoy_s&quot;, &quot;icsstemp_s&quot;],
+    errors=&quot;ignore&quot;
+)
+
+# View cleaned DataFrame
+df_binarized_final
+
+#define index
+df_binarized_final.index = [f&quot;case {i+1}&quot; for i in range(len(df_binarized_final))]
+
+# name the index
+df_binarized_final.index.name = &quot;sid&quot;
+
+# DATA CORRECTIONS BLOCK
+
+import numpy as np
+
+# Patient 1 → set trophic value to NA at Visit 20
+df_binarized_final.loc[&quot;case 1&quot;, &quot;v20_csstroph&quot;] = np.nan
+
+# Patient 5 → set trophic value to 1 at Visit 3
+df_binarized_final.loc[&quot;case 5&quot;, &quot;v3_csstroph&quot;] = 1
+
+# Patient 6 → set erythema value to NA at Visit 4
+df_binarized_final.loc[&quot;case 6&quot;, &quot;v4_csseryth&quot;] = np.nan
+
+# export to csv
+df_binarized_final.to_csv(
+&quot;data/df_binarise_final.csv&quot;,
+sep=&quot;;&quot;,
+encoding=&quot;utf-8-sig&quot;,
+index=True
+)
+</pre>
+<ol>
+	<li><h1 class="western">4. SCORE COMPUTATION FOR BLAND ALTMAN</h1>
+</ol>
+<p align="left" style="line-height: 115%">Now, we sum the patient and
+caregiver items to obtain the two scores required to perform the
+Bland Altman Analysis</p>
+<pre class="western">
+#open csv file df_binarise_final to check lines
+df = pd.read_csv(
+    &quot;data/df_binarise_final.csv&quot;,
+    sep=';' 
+)
+#print results
+print(df.head())
+print(df.shape) 
+# Create table for Bland-Altman analysis
+# Copy binarized DataFrame
+df_score = df_binarized_final.copy()
+
+# New table for scores
+df_scores = pd.DataFrame(index=df_binarized_final.index)
+
+# Loop over visits V1 to V20
+for i in range(1, 21):
+
+    # Visit columns
+    cols_v = df_binarized_final.filter(regex=f'^v{i}_').columns
+
+    # Separate objective / subjective columns
+    cols_obj = cols_v[:8]   # first 8 columns
+    cols_subj = cols_v[8:]  # last 8 columns
+
+    # Calculate scores
+    df_scores[f'V{i}_Scoreobj'] = df_binarized_final[cols_obj].sum(axis=1)
+    df_scores[f'V{i}_Scoresubj'] = df_binarized_final[cols_subj].sum(axis=1)
+
+# Final result
+print(df_scores.shape)
+print(df_scores.head())
+
+# Export scores to CSV
+df_scores.to_csv(
+    &quot;data/df_scores_final.csv&quot;,
+    sep=&quot;;&quot;,
+    encoding=&quot;utf-8-sig&quot;,
+    index=True
+)
+</pre>
+<ol start="2">
+	<li><h1 class="western">5. DESCRIPTIVE ANALYSIS</h1>
+</ol>
+<p align="left" style="line-height: 115%"><span style="font-weight: normal">We
+begin with an initial descriptive analysis to compare the difference
+between the objective et subjective scores at each visit </span>
+</p>
+<pre class="western">
+# Descriptive statistics
+print(df_scores.describe())
+
+import matplotlib.pyplot as plt
+
+# Objective and subjective columns
+cols_obj = [col for col in df_scores.columns if &quot;Scoreobj&quot; in col]
+cols_subj = [col for col in df_scores.columns if &quot;Scoresubj&quot; in col]
+
+# Boxplot for objective scores
+plt.figure()
+plt.boxplot(df_scores[cols_obj].values)
+plt.title(&quot;Objective Scores Distribution&quot;)
+plt.xlabel(&quot;Visits (V1 to V20)&quot;)
+plt.ylabel(&quot;Score&quot;)
+plt.show()
+
+# Boxplot for subjective scores
+plt.figure()
+plt.boxplot(df_scores[cols_subj].values)
+plt.title(&quot;Subjective Scores Distribution&quot;)
+plt.xlabel(&quot;Visits (V1 to V20)&quot;)
+plt.ylabel(&quot;Score&quot;)
+plt.show()</pre>
+</body>
+</html>
